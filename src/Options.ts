@@ -135,6 +135,11 @@ export interface IProps<FlatListItem = any, SectionListItem = any> {
    */
   sectionListProps?: SectionListProps<SectionListItem>;
 
+  /*
+   * An object to pass any of the react-native-webview's props.
+   */
+  webViewProps?: any;
+
   /**
    * A header component outside of the ScrollView, on top of the modal.
    */

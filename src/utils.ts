@@ -41,19 +41,10 @@ export const getSpringConfig = (config: ISpringProps) => {
   };
 };
 
-export const isIos = (): boolean => {
-  return Platform.OS === 'ios';
-};
-
-export const isIphoneX = (): boolean => {
-  // @ts-ignore
-  const isIphone = isIos() && !Platform.isPad && !Platform.isTVOS;
-
-  return (
-    isIphone &&
-    (screenHeight === 812 || screenWidth === 812 || screenHeight === 896 || screenWidth === 896)
-  );
-};
+export const isIos = Platform.OS === 'ios';
+export const isIphoneX =
+  Platform.OS === 'ios' &&
+  (screenHeight === 812 || screenWidth === 812 || screenHeight === 896 || screenWidth === 896);
 
 export const hasAbsoluteStyle = (Component: React.ReactNode): boolean => {
   if (!React.isValidElement(Component)) {

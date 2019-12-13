@@ -3,7 +3,6 @@ import {
   Animated,
   View,
   Dimensions,
-  Modal,
   Easing,
   LayoutChangeEvent,
   StyleProp,
@@ -24,6 +23,11 @@ import {
   TapGestureHandlerStateChangeEvent,
 } from 'react-native-gesture-handler';
 
+import { Modal as MModal } from './components/Modal';
+import { ScrollView as MScrollView } from './components/ScrollView';
+import { FlatList as MFlatList } from './components/FlatList';
+import { SectionList as MSectionList } from './components/SectionList';
+import { WebView as MWebView } from './components/WebView';
 import { IProps, IState } from './Options';
 import { getSpringConfig, isIphoneX, isIos, hasAbsoluteStyle } from './utils';
 import s from './Modalize.styles';
@@ -31,8 +35,6 @@ import s from './Modalize.styles';
 const { StatusBarManager } = NativeModules;
 const { height: screenHeight } = Dimensions.get('window');
 const AnimatedKeyboardAvoidingView = Animated.createAnimatedComponent(KeyboardAvoidingView);
-const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
-const AnimatedSectionList = Animated.createAnimatedComponent(SectionList);
 const THRESHOLD = 150;
 
 export default class Modalize<FlatListItem = any, SectionListItem = any> extends Component<
@@ -74,8 +76,8 @@ export default class Modalize<FlatListItem = any, SectionListItem = any> extends
   constructor(props: IProps<FlatListItem, SectionListItem>) {
     super(props);
 
-    const fullHeight = isIos() ? screenHeight : screenHeight - 10;
-    const computedHeight = fullHeight - this.handleHeight - (isIphoneX() ? 34 : 0);
+    const fullHeight = isIos ? screenHeight : screenHeight - 10;
+    const computedHeight = fullHeight - this.handleHeight - (isIphoneX ? 34 : 0);
     const modalHeight = props.modalHeight || computedHeight;
 
     if (props.withReactModal) {
@@ -335,7 +337,7 @@ export default class Modalize<FlatListItem = any, SectionListItem = any> extends
     const contentViewHeight = [];
 
     if (keyboardHeight) {
-      const statusBarHeight = isIphoneX() ? 48 : isIos() ? 20 : StatusBarManager.HEIGHT;
+      const statusBarHeight = isIphoneX ? 48 : isIos ? 20 : StatusBarManager.HEIGHT;
       const height =
         screenHeight -
         keyboardHeight -
@@ -557,10 +559,10 @@ export default class Modalize<FlatListItem = any, SectionListItem = any> extends
   };
 
   private renderContent = (): ReactNode => {
-    const { children, scrollViewProps, flatListProps, sectionListProps } = this.props;
+    const { children, scrollViewProps, flatListProps, sectionListProps, webViewProps } = this.props;
     const { contentHeight, enableBounces, contentViewHeight, keyboardEnableScroll } = this.state;
     const scrollEnabled = contentHeight === 0 || keyboardEnableScroll;
-    const keyboardDismissMode = isIos() ? 'interactive' : 'on-drag';
+    const keyboardDismissMode = isIos ? 'interactive' : 'on-drag';
 
     const opts = {
       ref: this.contentView,
@@ -573,18 +575,33 @@ export default class Modalize<FlatListItem = any, SectionListItem = any> extends
       scrollEventThrottle: 16,
       onLayout: this.onContentViewLayout,
       scrollEnabled,
+      keyboardDismissMode,
     };
 
+    if (webViewProps) {
+      return (
+        <MWebView {...opts} {...webViewProps}>
+          {children}
+        </MWebView>
+      );
+    }
+
     if (flatListProps) {
-      return <AnimatedFlatList {...opts} {...flatListProps} />;
+      return <MFlatList {...opts} {...flatListProps} />;
     }
 
     if (sectionListProps) {
-      return <AnimatedSectionList {...opts} {...sectionListProps} />;
+      return <MSectionList {...opts} {...sectionListProps} />;
     }
 
     return (
-      <Animated.ScrollView {...opts} {...scrollViewProps} keyboardDismissMode={keyboardDismissMode}>
+      <MScrollView {...opts} {...scrollViewProps}>
+        {children}
+      </MScrollView>
+    );
+
+    return (
+      <Animated.ScrollView {...opts} {...scrollViewProps}>
         {children}
       </Animated.ScrollView>
     );
@@ -594,7 +611,7 @@ export default class Modalize<FlatListItem = any, SectionListItem = any> extends
     const { useNativeDriver, adjustToContentHeight, keyboardAvoidingBehavior } = this.props;
     const { keyboardToggle } = this.state;
     const marginBottom = adjustToContentHeight ? 0 : keyboardToggle ? this.handleHeight : 0;
-    const enabled = isIos() && !adjustToContentHeight;
+    const enabled = isIos && !adjustToContentHeight;
 
     return (
       <PanGestureHandler
@@ -670,7 +687,7 @@ export default class Modalize<FlatListItem = any, SectionListItem = any> extends
   private renderModalize = (): ReactNode => {
     const { modalStyle, adjustToContentHeight, keyboardAvoidingBehavior, alwaysOpen } = this.props;
     const { isVisible, lastSnap, showContent } = this.state;
-    const enabled = isIos() && adjustToContentHeight;
+    const enabled = isIos && adjustToContentHeight;
     const pointerEvents = alwaysOpen ? 'box-none' : 'auto';
 
     if (!isVisible) {
@@ -701,28 +718,20 @@ export default class Modalize<FlatListItem = any, SectionListItem = any> extends
     );
   };
 
-  private renderReactModal = (child: ReactNode): ReactNode => {
-    const { useNativeDriver } = this.props;
+  render(): ReactNode {
+    const { withReactModal, useNativeDriver } = this.props;
     const { isVisible } = this.state;
 
-    return (
-      <Modal
-        supportedOrientations={['landscape', 'portrait', 'portrait-upside-down']}
-        onRequestClose={this.onBackPress}
-        hardwareAccelerated={useNativeDriver}
-        visible={isVisible}
-        transparent
-      >
-        {child}
-      </Modal>
-    );
-  };
-
-  render(): ReactNode {
-    const { withReactModal } = this.props;
-
     if (withReactModal) {
-      return this.renderReactModal(this.renderModalize());
+      return (
+        <MModal
+          isVisible={isVisible}
+          useNativeDriver={useNativeDriver}
+          onBackPress={this.onBackPress}
+        >
+          {this.renderModalize()}
+        </MModal>
+      );
     }
 
     return this.renderModalize();
