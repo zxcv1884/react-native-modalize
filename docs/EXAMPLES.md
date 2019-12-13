@@ -19,6 +19,7 @@ This is probably the simplest navigator to handle this bevahior. There is a meth
 <p>
 
 #### Tab #1
+
 ```bash
 cd examples/react-native-navigation
 yarn
@@ -26,12 +27,14 @@ yarn start
 ```
 
 #### Tab #2
+
 ```bash
 cd examples/react-native-navigation
 yarn ios (or android)
 cd ../..
 yarn watch:react-native-navigation
 ```
+
 </p>
 </details>
 
@@ -44,6 +47,7 @@ This example use react-navigation. Modalize is used on the screen you need to to
 <p>
 
 #### Tab #1
+
 ```bash
 cd examples/react-navigation
 yarn
@@ -51,12 +55,14 @@ yarn start
 ```
 
 #### Tab #2
+
 ```bash
 cd examples/react-navigation
 yarn ios (or android)
 cd ../..
 yarn watch:react-navigation
 ```
+
 </p>
 </details>
 
@@ -69,6 +75,7 @@ This example is runing under Expo without any navigator. Also, in this example `
 <p>
 
 #### Tab #1
+
 ```bash
 cd examples/expo
 yarn
@@ -76,10 +83,12 @@ yarn start
 ```
 
 #### Tab #2
+
 ```bash
 cd ../..
 yarn watch:expo
 ```
+
 </p>
 </details>
 

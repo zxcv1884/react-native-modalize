@@ -8,9 +8,9 @@ By passing a children props it will use the default `ScrollView` component. Howe
 
 ?> If you want to use another ScrollView inside the modal, check the **Default Content** example: `examples/expo/src/modals/SimpleContent.tsx`. It uses the ScrollView from `react-native-gesture-handler`.
 
-| Type     | Required |
-| -------- | -------- |
-| node     | No       |
+| Type | Required |
+| ---- | -------- |
+| node | No       |
 
 ### `snapPoint`
 
@@ -18,17 +18,17 @@ A number that will enable the snapping feature and create an intermediate point 
 
 The value you pass is the height of the modal before being full opened.
 
-| Type     | Required |
-| -------- | -------- |
-| number   | No       |
+| Type   | Required |
+| ------ | -------- |
+| number | No       |
 
 ### `modalHeight`
 
 A number to define the modal's total height.
 
-| Type     | Required |
-| -------- | -------- |
-| number   | No       |
+| Type   | Required |
+| ------ | -------- |
+| number | No       |
 
 ### `alwaysOpen`
 
@@ -36,9 +36,9 @@ A number that will make the modal visible all the time. You can still [open](/PR
 
 The value you pass is the height of the visible part of the modal on top of the screen.
 
-| Type     | Required |
-| -------- | -------- |
-| number   | No       |
+| Type   | Required |
+| ------ | -------- |
+| number | No       |
 
 ### `handlePosition`
 
@@ -52,9 +52,9 @@ Define where the handle on top of the modal should be positioned.
 
 Define the style of the modal.
 
-| Type     | Required |
-| -------- | -------- |
-| style    | No       |
+| Type  | Required |
+| ----- | -------- |
+| style | No       |
 
 ### `handleStyle`
 
@@ -62,17 +62,17 @@ Define the style of the handle on top of the modal.
 
 ?> Be aware that if you change the height of the handle, the modal height won't change. It's not dynamic yet, and it will be in the future.
 
-| Type     | Required |
-| -------- | -------- |
-| style    | No       |
+| Type  | Required |
+| ----- | -------- |
+| style | No       |
 
 ### `overlayStyle`
 
 Define the style of the overlay.
 
-| Type     | Required |
-| -------- | -------- |
-| style    | No       |
+| Type  | Required |
+| ----- | -------- |
+| style | No       |
 
 ### `useNativeDriver`
 
@@ -80,25 +80,25 @@ Use the native thread by default to execute the animations.
 
 It's not really recommanded to set it to `false`, but sometimes you don't have choice, so this option is here for that.
 
-| Type     | Required | Default  |
-| -------- | -------- | -------- |
-| bool     | No       | `true`   |
+| Type | Required | Default |
+| ---- | -------- | ------- |
+| bool | No       | `true`  |
 
 ### `openAnimationConfig`
 
 Object to change the open animations. There is `Animated.timing` and `Animated.spring` used to animate the modal. That's why the configuration object is splited into two objects to configure both animation.
 
-| Type     | Required | Default                                                               |
-| -------- | -------- | --------------------------------------------------------------------- |
-| object   | No       | `{ timing: { duration: 280 }, spring: { speed: 14, bounciness: 5 } }` |
+| Type   | Required | Default                                                               |
+| ------ | -------- | --------------------------------------------------------------------- |
+| object | No       | `{ timing: { duration: 280 }, spring: { speed: 14, bounciness: 5 } }` |
 
 ### `closeAnimationConfig`
 
 Object to change the close animations. There is `Animated.timing` and `Animated.spring` used to animate the modal. That's why the configuration object is splited into two objects to configure both animation.
 
-| Type     | Required | Default                                                               |
-| -------- | -------- | --------------------------------------------------------------------- |
-| object   | No       | `{ timing: { duration: 280 }, spring: { speed: 14, bounciness: 5 } }` |
+| Type   | Required | Default                                                               |
+| ------ | -------- | --------------------------------------------------------------------- |
+| object | No       | `{ timing: { duration: 280 }, spring: { speed: 14, bounciness: 5 } }` |
 
 ### `adjustToContentHeight`
 
@@ -106,9 +106,9 @@ Shrink the modal to your content's height.
 
 `Modalize` can calculate for you if your content is taller than the max height or not, if it isn't, it will adapt the height of the modal to fit your content.
 
-| Type     | Required | Default  |
-| -------- | -------- | -------- |
-| bool     | No       | `false`  |
+| Type | Required | Default |
+| ---- | -------- | ------- |
+| bool | No       | `false` |
 
 ### `keyboardAvoidingBehavior`
 
@@ -128,17 +128,17 @@ Define if `Modalize` has to be wrap with the Modal component from react-native.
 
 ?> It's not recommended to pass it at `true`. Check the [examples' documentation](/EXAMPLES.md) to find the other ways to handle it.
 
-| Type     | Required | Default  |
-| -------- | -------- | -------- |
-| bool     | No       | `false`  |
+| Type | Required | Default |
+| ---- | -------- | ------- |
+| bool | No       | `false` |
 
 ### `withHandle`
 
 Define if the handle on top of the modal is display or not.
 
-| Type     | Required | Default  |
-| -------- | -------- | -------- |
-| bool     | No       | `true`   |
+| Type | Required | Default |
+| ---- | -------- | ------- |
+| bool | No       | `true`  |
 
 ### `scrollViewProps`
 
@@ -146,9 +146,9 @@ An object to pass any of the react-native ScrollView's props.
 
 Refer to the [`react-native` ScrollView documentation](https://facebook.github.io/react-native/docs/#props) to know all the avaibles props.
 
-| Type     | Required |
-| -------- | -------- |
-| object   | No       |
+| Type   | Required |
+| ------ | -------- |
+| object | No       |
 
 ### `flatListProps`
 
@@ -156,9 +156,9 @@ An object to pass any of the react-native FlatList's props. Using this props wil
 
 Refer to the [`react-native` FlatList documentation](https://facebook.github.io/react-native/docs/flatlist#props) to know all the avaibles props.
 
-| Type     | Required |
-| -------- | -------- |
-| object   | No       |
+| Type   | Required |
+| ------ | -------- |
+| object | No       |
 
 ### `sectionListProps`
 
@@ -166,25 +166,25 @@ An object to pass any of the react-native SectionList's props. Using this props 
 
 Refer to the [`react-native` SectionList documentation](https://facebook.github.io/react-native/docs/sectionlist#props) to know all the avaibles props.
 
-| Type     | Required |
-| -------- | -------- |
-| object   | No       |
+| Type   | Required |
+| ------ | -------- |
+| object | No       |
 
 ### `HeaderComponent`
 
 A header component outside of the ScrollView, at the top of the modal.
 
-| Type     | Required |
-| -------- | -------- |
-| node     | No       |
+| Type | Required |
+| ---- | -------- |
+| node | No       |
 
 ### `FooterComponent`
 
 A footer component outside of the ScrollView, at the bottom of the modal.
 
-| Type     | Required |
-| -------- | -------- |
-| node     | No       |
+| Type | Required |
+| ---- | -------- |
+| node | No       |
 
 ### `onOpen`
 
@@ -229,9 +229,9 @@ Callback function when the modal is closed.
 
 The method to open the modal.
 
-| Type     | Required  |
-| -------- | --------- |
-| function | Yes       |
+| Type     | Required |
+| -------- | -------- |
+| function | Yes      |
 
 ### `close()`
 

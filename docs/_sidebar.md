@@ -1,8 +1,10 @@
 - Getting started
+
   - [Installation](/INSTALLATION)
   - [Usage](/USAGE)
 
 - Guide
+
   - [Features](/FEATURES)
   - [Props and Methods](/PROPSMETHODS)
   - [Development](/DEVELOPMENT)
