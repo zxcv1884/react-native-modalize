@@ -1,7 +1,8 @@
 import React, { useRef, forwardRef } from 'react';
-import { StyleSheet, Text, View, TextInput, ScrollView } from 'react-native';
+import { Image, StyleSheet, Text, View, TextInput, ScrollView, Dimensions } from 'react-native';
 import { Modalize } from 'react-native-modalize';
 import faker from 'faker';
+import { Video } from 'expo-av';
 
 import { useCombinedRefs } from '../../utils/use-combined-refs';
 
@@ -40,12 +41,46 @@ export const SimpleContent = forwardRef((_, ref) => {
   return (
     <Modalize
       ref={combinedRef}
-      scrollViewProps={{
-        showsVerticalScrollIndicator: false,
-        stickyHeaderIndices: [0],
-      }}
+      // scrollViewProps={{
+      //   showsVerticalScrollIndicator: false,
+      //   stickyHeaderIndices: [0],
+      // }}
     >
-      {renderContent()}
+      {/* {renderContent()} */}
+      <Video
+        source={{
+          uri:
+            'http://qthttp.apple.com.edgesuite.net/1010qwoeiuryfg/sl.m3u8',
+        }}
+        useNativeControls
+        key={'http://qthttp.apple.com.edgesuite.net/1010qwoeiuryfg/sl.m3u8'}
+        style={{
+          height: undefined,
+          width: '100%',
+          backgroundColor: 'black',
+          aspectRatio: 3 / 2,
+          zIndex: 2,
+        }}
+        useTextureView={false}
+      />
+
+      {/* <Image
+        resizeMode="cover"
+        style={{ height: Dimensions.get('window') }}
+        source={{
+          uri:
+            'https://d1rwbc680ljllj.cloudfront.net/api/serve/5e70b3f3283c152ae40cb648/thumb',
+        }}
+      />
+
+      <Image
+        resizeMode="contain"
+        style={{ height: Dimensions.get('window') }}
+        source={{
+          uri:
+            'https://d1rwbc680ljllj.cloudfront.net/api/serve/5e70b3f3283c152ae40cb648/thumb',
+        }}
+      /> */}
     </Modalize>
   );
 });

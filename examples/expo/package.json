@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "expo": "~37.0.3",
+    "expo-av": "~8.1.0",
     "faker": "^4.1.0",
     "react": "~16.13.1",
     "react-dom": "~16.13.1",

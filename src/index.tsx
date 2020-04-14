@@ -821,19 +821,35 @@ export class Modalize<FlatListItem = any, SectionListItem = any> extends React.C
     );
   };
 
+  private renderTapGestureHandler = (child: React.ReactNode): React.ReactNode => {
+    const { panGestureEnabled } = this.props;
+    const { lastSnap } = this.state;
+
+    return (
+      <TapGestureHandler
+        ref={this.modal}
+        maxDurationMs={100000}
+        maxDeltaY={lastSnap}
+        enabled={panGestureEnabled}
+        numberOfTaps={1}
+      >
+        {child}
+      </TapGestureHandler>
+    );
+  };
+
   private renderModalize = (): React.ReactNode => {
     const {
       keyboardAvoidingOffset,
       modalStyle,
       keyboardAvoidingBehavior,
       alwaysOpen,
-      panGestureEnabled,
       avoidKeyboardLikeIOS,
       adjustToContentHeight,
       modalElevation: elevation,
       withOverlay,
     } = this.props;
-    const { isVisible, lastSnap, showContent } = this.state;
+    const { isVisible, showContent } = this.state;
     const pointerEvents = alwaysOpen || !withOverlay ? 'box-none' : 'auto';
 
     const keyboardAvoidingViewProps: Animated.AnimatedProps<KeyboardAvoidingViewProps> = {
@@ -851,28 +867,25 @@ export class Modalize<FlatListItem = any, SectionListItem = any> extends React.C
       return null;
     }
 
+    const wrapper = (
+      <View style={s.modalize__wrapper} pointerEvents="box-none">
+        {showContent && (
+          <AnimatedKeyboardAvoidingView {...keyboardAvoidingViewProps}>
+            {this.renderHandle()}
+            {this.renderHeader()}
+            {this.renderChildren()}
+            {this.renderFooter()}
+          </AnimatedKeyboardAvoidingView>
+        )}
+
+        {withOverlay && this.renderOverlay()}
+      </View>
+    );
+
     return (
       <GestureHandlerWrapper style={[s.modalize, { elevation }]} pointerEvents={pointerEvents}>
-        <TapGestureHandler
-          ref={this.modal}
-          maxDurationMs={100000}
-          maxDeltaY={lastSnap}
-          enabled={panGestureEnabled}
-        >
-          <View style={s.modalize__wrapper} pointerEvents="box-none">
-            {showContent && (
-              <AnimatedKeyboardAvoidingView {...keyboardAvoidingViewProps}>
-                {this.renderHandle()}
-                {this.renderHeader()}
-                {this.renderChildren()}
-                {this.renderFooter()}
-              </AnimatedKeyboardAvoidingView>
-            )}
-
-            {withOverlay && this.renderOverlay()}
-          </View>
-        </TapGestureHandler>
-
+        {false && this.renderTapGestureHandler(wrapper)}
+        {true && wrapper}
         {this.renderFloatingComponent()}
       </GestureHandlerWrapper>
     );
