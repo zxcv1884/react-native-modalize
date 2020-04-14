@@ -44,6 +44,7 @@ export const SimpleContent = forwardRef((_, ref) => {
         showsVerticalScrollIndicator: false,
         stickyHeaderIndices: [0],
       }}
+      openDirection="topToBottom"
     >
       {renderContent()}
     </Modalize>

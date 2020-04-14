@@ -102,6 +102,12 @@ export interface IProps<FlatListItem = any, SectionListItem = any> {
   useNativeDriver: boolean;
 
   /**
+   * Define in which direction Modalize will open
+   * @default bottomToTop
+   */
+  openDirection: 'topToBottom' | 'bottomToTop';
+
+  /**
    * Object to change the open animations
    * @default
    * {

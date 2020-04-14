@@ -100,6 +100,14 @@ It's not really recommanded to set it to `false`, but sometimes you don't have c
 | -------- | -------- | -------- |
 | bool     | No       | `true`   |
 
+### `openDirection`
+
+Define in which direction Modalize will open
+
+| Type                               | Required | Default       |
+| ---------------------------------- | -------- | ------------- |
+| enum('topToBottom', 'bottomToTop') | No       | `topToBottom` |
+
 ### `openAnimationConfig`
 
 Object to change the open animations. You can either pass a timing (`Animated.timing`) or a spring (`Animated.spring`) animation.

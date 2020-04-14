@@ -66,6 +66,7 @@ export class Modalize<FlatListItem = any, SectionListItem = any> extends React.C
     withReactModal: false,
     withHandle: true,
     withOverlay: true,
+    openDirection: 'bottomToTop',
     openAnimationConfig: {
       timing: { duration: 280, easing: Easing.ease },
       spring: { speed: 14, bounciness: 4 },
@@ -82,7 +83,7 @@ export class Modalize<FlatListItem = any, SectionListItem = any> extends React.C
   private beginScrollYValue: number = 0;
   private beginScrollY: Animated.Value = new Animated.Value(0);
   private dragY: Animated.Value = new Animated.Value(0);
-  private translateY: Animated.Value = new Animated.Value(screenHeight);
+  private translateY: Animated.Value = new Animated.Value(this.props.openDirection === 'topToBottom' ? -screenHeight : screenHeight);
   private reverseBeginScrollY: Animated.AnimatedMultiplication;
   private modal: React.RefObject<TapGestureHandler> = React.createRef();
   private modalChildren: React.RefObject<PanGestureHandler> = React.createRef();
@@ -100,7 +101,9 @@ export class Modalize<FlatListItem = any, SectionListItem = any> extends React.C
     super(props);
 
     const fullHeight = screenHeight - props.modalTopOffset!;
-    const computedHeight = fullHeight - this.handleHeight - (isIphoneX ? 34 : 0);
+    const topToBottom = props.openDirection === 'topToBottom';
+    const directionOffset = topToBottom ? 0 : this.handleHeight;
+    const computedHeight = fullHeight - directionOffset - (isIphoneX ? 34 : 0);
     const modalHeight = props.modalHeight || computedHeight;
 
     this.initialComputedModalHeight = modalHeight;
@@ -123,10 +126,16 @@ export class Modalize<FlatListItem = any, SectionListItem = any> extends React.C
       );
     }
 
+    const snapTopOffset = topToBottom ? -screenHeight : 0;
+
     if (props.snapPoint) {
-      this.snaps.push(0, modalHeight - props.snapPoint, modalHeight);
+      this.snaps.push(
+        snapTopOffset,
+        modalHeight - props.snapPoint + snapTopOffset,
+        modalHeight + snapTopOffset,
+      );
     } else {
-      this.snaps.push(0, modalHeight);
+      this.snaps.push(snapTopOffset, modalHeight + snapTopOffset);
     }
 
     this.snapEnd = this.snaps[this.snaps.length - 1];
@@ -241,7 +250,11 @@ export class Modalize<FlatListItem = any, SectionListItem = any> extends React.C
   }
 
   private get modalizeContent(): Animated.AnimatedProps<ViewStyle> {
+    const { openDirection } = this.props;
     const { modalHeight } = this.state;
+    const topToBottom = openDirection === 'topToBottom';
+    const margin = topToBottom ? { marginBottom: 'auto' } : { marginTop: 'auto' };
+    const fromTopOffset = topToBottom ? -screenHeight : 0;
     // We diff and get the negative value only. It sometimes go above 0 (e.g. 1.5) and creates the flickering on Modalize for a ms
     const diffClamp = Animated.diffClamp(this.reverseBeginScrollY, -screenHeight, 0);
     const valueY = Animated.add(this.dragY, diffClamp);
@@ -252,12 +265,13 @@ export class Modalize<FlatListItem = any, SectionListItem = any> extends React.C
       transform: [
         {
           translateY: Animated.add(this.translateY, valueY).interpolate({
-            inputRange: [-40, 0, this.snapEnd],
-            outputRange: [0, 0, this.snapEnd],
+            inputRange: [-40 + fromTopOffset, fromTopOffset, this.snapEnd],
+            outputRange: [fromTopOffset, fromTopOffset, this.snapEnd],
             extrapolate: 'clamp',
           }),
         },
       ],
+      ...margin,
     };
   }
 
@@ -363,12 +377,16 @@ export class Modalize<FlatListItem = any, SectionListItem = any> extends React.C
       alwaysOpen,
       onPositionChange,
       panGestureAnimatedValue,
+      openDirection,
     } = this.props;
     const { timing, spring } = closeAnimationConfig!;
-    const { overlay, modalHeight } = this.state;
+    const { overlay, modalHeight, contentHeight } = this.state;
+    const topToBottom = openDirection === 'topToBottom';
     const lastSnap = snapPoint ? this.snaps[1] : 80;
     const toInitialAlwaysOpen = dest === 'alwaysOpen' && Boolean(alwaysOpen);
-    const toValue = toInitialAlwaysOpen ? (modalHeight || 0) - alwaysOpen! : screenHeight;
+    const toValue = topToBottom
+      ? modalHeight ? -contentHeight + modalHeight : -screenHeight
+      : toInitialAlwaysOpen ? (modalHeight || 0) - alwaysOpen! : screenHeight;
 
     BackHandler.removeEventListener('hardwareBackPress', this.onBackPress);
 
@@ -481,11 +499,14 @@ export class Modalize<FlatListItem = any, SectionListItem = any> extends React.C
       onPositionChange,
       panGestureAnimatedValue,
       threshold,
+      openDirection,
     } = this.props;
     const { timing } = closeAnimationConfig!;
     const { lastSnap, modalHeight, overlay } = this.state;
     const { velocityY, translationY } = nativeEvent;
+    const topToBottom = openDirection === 'topToBottom';
     const enableBounces = this.beginScrollYValue > 0 || translationY < 0;
+    const translationMultiplier = topToBottom ? -1 : 1;
 
     this.setState({ enableBounces });
 
@@ -514,7 +535,7 @@ export class Modalize<FlatListItem = any, SectionListItem = any> extends React.C
           }
         });
       } else if (
-        translationY > (adjustToContentHeight ? (modalHeight || 0) / 3 : threshold) &&
+        (translationMultiplier * translationY) > (adjustToContentHeight ? (modalHeight || 0) / 3 : threshold) &&
         this.beginScrollYValue === 0 &&
         !alwaysOpen
       ) {
@@ -649,8 +670,11 @@ export class Modalize<FlatListItem = any, SectionListItem = any> extends React.C
   };
 
   private renderHandle = (): React.ReactNode => {
-    const { handleStyle, withHandle, panGestureEnabled } = this.props;
-    const handleStyles: (TStyle | undefined)[] = [s.handle];
+    const { handleStyle, withHandle, panGestureEnabled, openDirection } = this.props;
+    const topToBottom = openDirection === 'topToBottom';
+    const handlePosition = topToBottom ? { bottom: -20 } : { top: -20 };
+    const handleBottomPosition = topToBottom ? { bottom: 0 } : { top: 0 };
+    const handleStyles: (TStyle | undefined)[] = [s.handle, handlePosition];
     const shapeStyles: (TStyle | undefined)[] = [s.handle__shape, handleStyle];
 
     if (!withHandle) {
@@ -658,7 +682,7 @@ export class Modalize<FlatListItem = any, SectionListItem = any> extends React.C
     }
 
     if (!this.isHandleOutside) {
-      handleStyles.push(s.handleBottom);
+      handleStyles.push(handleBottomPosition);
       shapeStyles.push(s.handle__shapeBottom, handleStyle);
     }
 
@@ -827,15 +851,20 @@ export class Modalize<FlatListItem = any, SectionListItem = any> extends React.C
       adjustToContentHeight,
       modalElevation: elevation,
       withOverlay,
+      openDirection,
     } = this.props;
     const { isVisible, lastSnap, showContent } = this.state;
+    const topToBottom = openDirection === 'topToBottom';
     const pointerEvents = alwaysOpen || !withOverlay ? 'box-none' : 'auto';
+    const radiusStyle = topToBottom
+      ? { borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }
+      : { borderTopLeftRadius: 12, borderTopRightRadius: 12 };
 
     const keyboardAvoidingViewProps: Animated.AnimatedProps<KeyboardAvoidingViewProps> = {
       keyboardVerticalOffset: keyboardAvoidingOffset,
       behavior: keyboardAvoidingBehavior || 'padding',
       enabled: avoidKeyboardLikeIOS,
-      style: [s.modalize__content, this.modalizeContent, modalStyle],
+      style: [s.modalize__content, this.modalizeContent, radiusStyle, modalStyle],
     };
 
     if (!avoidKeyboardLikeIOS && !adjustToContentHeight) {
