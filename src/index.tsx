@@ -5,43 +5,52 @@
 import * as React from 'react';
 import {
   Animated,
-  View,
-  Modal,
-  Easing,
-  LayoutChangeEvent,
   BackHandler,
-  KeyboardAvoidingView,
-  Keyboard,
-  ScrollView,
-  FlatList,
-  SectionList,
-  Platform,
-  StatusBar,
-  KeyboardEvent,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
-  StyleSheet,
-  KeyboardAvoidingViewProps,
-  ViewStyle,
-  NativeEventSubscription,
+  Easing,
   EmitterSubscription,
+  FlatList,
+  Keyboard,
+  KeyboardAvoidingView,
+  KeyboardAvoidingViewProps,
+  KeyboardEvent,
+  LayoutChangeEvent,
+  Modal,
+  NativeEventSubscription,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Platform,
+  ScrollView,
+  SectionList,
+  StatusBar,
+  StyleSheet,
+  View,
+  ViewStyle,
 } from 'react-native';
 import {
-  PanGestureHandler,
   NativeViewGestureHandler,
+  PanGestureHandler,
+  PanGestureHandlerStateChangeEvent,
   State,
   TapGestureHandler,
-  PanGestureHandlerStateChangeEvent,
   TapGestureHandlerStateChangeEvent,
 } from 'react-native-gesture-handler';
+import {
+  Easing as RNREasing,
+  runOnJS,
+  useDerivedValue,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
-import { IProps, TOpen, TClose, TStyle, IHandles, TPosition } from './options';
-import { useDimensions } from './utils/use-dimensions';
-import { getSpringConfig } from './utils/get-spring-config';
-import { isIphoneX, isIos, isAndroid } from './utils/devices';
-import { isBelowRN65, isRNGH2 } from './utils/libraries';
-import { invariant } from './utils/invariant';
+import { clamp } from './utils/clamp';
 import { composeRefs } from './utils/compose-refs';
+import { isAndroid, isIos, isIphoneX } from './utils/devices';
+import { getSpringConfig } from './utils/get-spring-config';
+import { invariant } from './utils/invariant';
+import { isBelowRN65, isRNGH2 } from './utils/libraries';
+import { useDimensions } from './utils/use-dimensions';
+import { Close, Handles, ModalizeProps, Open, Position, Style } from './options';
 import s from './styles';
 
 const AnimatedKeyboardAvoidingView = Animated.createAnimatedComponent(KeyboardAvoidingView);
@@ -112,6 +121,7 @@ const ModalizeBase = (
     dragToss = 0.18,
     threshold = 120,
     velocity = 2800,
+    newPanGestureAnimatedValue,
     panGestureAnimatedValue,
     useNativeDriver = true,
 
@@ -135,7 +145,7 @@ const ModalizeBase = (
     onPositionChange,
     onOverlayPress,
     onLayout,
-  }: IProps,
+  }: ModalizeProps,
   ref: React.Ref<React.ReactNode>,
 ): JSX.Element | null => {
   const { height: screenHeight } = useDimensions();
@@ -158,9 +168,17 @@ const ModalizeBase = (
     alwaysOpen || snapPoint ? true : undefined,
   );
   const [beginScrollYValue, setBeginScrollYValue] = React.useState(0);
-  const [modalPosition, setModalPosition] = React.useState<TPosition>('initial');
+  const [modalPosition, setModalPosition] = React.useState<Position>('initial');
   const [cancelClose, setCancelClose] = React.useState(false);
   const [layouts, setLayouts] = React.useState<Map<string, number>>(new Map());
+
+  const newCancelTranslateY = useSharedValue(1); // 1 by default to have the translateY animation running
+  const newComponentTranslateY = useSharedValue(0);
+  const newOverlay = useSharedValue(0);
+  const newBeginScrollY = useSharedValue(0);
+  const newDragY = useSharedValue(0);
+  const newTranslateY = useSharedValue(screenHeight);
+  const newReverseBeginScrollY = useSharedValue(-1 * newBeginScrollY.value);
 
   const cancelTranslateY = React.useRef(new Animated.Value(1)).current; // 1 by default to have the translateY animation running
   const componentTranslateY = React.useRef(new Animated.Value(0)).current;
@@ -176,18 +194,42 @@ const ModalizeBase = (
   const nativeViewChildrenRef = React.useRef<NativeViewGestureHandler>(null);
   const contentViewRef = React.useRef<ScrollView | FlatList<any> | SectionList<any>>(null);
   const tapGestureOverlayRef = React.useRef<TapGestureHandler>(null);
-  const backButtonListenerRef = React.useRef<NativeEventSubscription>(null);
+  const backButtonListenerRef = React.useRef<NativeEventSubscription | null>(null);
+
+  // We diff and get the negative value only. It sometimes go above 0
+  // (e.g. 1.5) and creates the flickering on Modalize for a ms
+  const newDiffClamp = useDerivedValue(
+    () => clamp(newReverseBeginScrollY.value, -screenHeight, 0),
+    [newReverseBeginScrollY, screenHeight],
+  );
 
   // We diff and get the negative value only. It sometimes go above 0
   // (e.g. 1.5) and creates the flickering on Modalize for a ms
   const diffClamp = Animated.diffClamp(reverseBeginScrollY, -screenHeight, 0);
+
+  const newComponentDragEnabled = newComponentTranslateY.value === 1;
+
   const componentDragEnabled = (componentTranslateY as any)._value === 1;
+
+  // When we have a scrolling happening in the ScrollView, we don't want to translate
+  // the modal down. We either multiply by 0 to cancel the animation, or 1 to proceed.
+  const newDragValue = useDerivedValue(
+    () => newDragY.value * (newComponentDragEnabled ? 1 : newCancelTranslateY.value),
+    [newDragY, newComponentDragEnabled, newCancelTranslateY, newDiffClamp],
+  );
+
   // When we have a scrolling happening in the ScrollView, we don't want to translate
   // the modal down. We either multiply by 0 to cancel the animation, or 1 to proceed.
   const dragValue = Animated.add(
     Animated.multiply(dragY, componentDragEnabled ? 1 : cancelTranslateY),
     diffClamp,
   );
+
+  const newValue = useDerivedValue(
+    () => newTranslateY.value * (newComponentDragEnabled ? 1 : newCancelTranslateY.value),
+    [newTranslateY, newComponentDragEnabled, newCancelTranslateY, newDragValue],
+  );
+
   const value = Animated.add(
     Animated.multiply(translateY, componentDragEnabled ? 1 : cancelTranslateY),
     dragValue,
@@ -221,20 +263,29 @@ const ModalizeBase = (
     setKeyboardHeight(0);
   };
 
-  const handleAnimateOpen = (
-    alwaysOpenValue: number | undefined,
-    dest: TOpen = 'default',
-  ): void => {
+  const openFinished = (newPosition: Position) => {
+    if (onOpened) {
+      onOpened();
+    }
+
+    setModalPosition(newPosition);
+
+    if (onPositionChange) {
+      onPositionChange(newPosition);
+    }
+  };
+
+  const handleAnimateOpen = (alwaysOpenValue: number | undefined, dest: Open = 'default'): void => {
     const { timing, spring } = openAnimationConfig;
 
-    (backButtonListenerRef as any).current = BackHandler.addEventListener(
+    backButtonListenerRef.current = BackHandler.addEventListener(
       'hardwareBackPress',
       handleBackPress,
     );
 
     let toValue = 0;
     let toPanValue = 0;
-    let newPosition: TPosition;
+    let newPosition: Position;
 
     if (dest === 'top') {
       toValue = 0;
@@ -263,6 +314,46 @@ const ModalizeBase = (
       newPosition = 'top';
     }
 
+    newOverlay.value = withTiming(alwaysOpenValue && dest === 'default' ? 0 : 1, {
+      duration: timing.duration,
+      easing: RNREasing.ease,
+    });
+
+    if (newPanGestureAnimatedValue) {
+      newPanGestureAnimatedValue.value = withTiming(toPanValue, {
+        duration: PAN_DURATION,
+        easing: RNREasing.ease,
+      });
+    }
+
+    if (spring) {
+      newTranslateY.value = withSpring(
+        toValue,
+        {
+          ...getSpringConfig(spring),
+        },
+        isFinished => {
+          if (isFinished) {
+            runOnJS(openFinished)(newPosition);
+          }
+        },
+      );
+    } else {
+      newTranslateY.value = withTiming(
+        toValue,
+        {
+          duration: timing.duration,
+          easing: RNREasing.ease,
+        },
+        isFinished => {
+          if (isFinished) {
+            runOnJS(openFinished)(newPosition);
+          }
+        },
+      );
+    }
+
+    /*
     Animated.parallel([
       Animated.timing(overlay, {
         toValue: alwaysOpenValue && dest === 'default' ? 0 : 1,
@@ -303,9 +394,10 @@ const ModalizeBase = (
         onPositionChange(newPosition);
       }
     });
+    */
   };
 
-  const handleAnimateClose = (dest: TClose = 'default', callback?: () => void): void => {
+  const handleAnimateClose = (dest: Close = 'default', callback?: () => void): void => {
     const { timing, spring } = closeAnimationConfig;
     const lastSnapValue = snapPoint ? snaps[1] : 80;
     const toInitialAlwaysOpen = dest === 'alwaysOpen' && Boolean(alwaysOpen);
@@ -436,7 +528,7 @@ const ModalizeBase = (
     handleBaseLayout(name, nativeEvent.layout.height);
   };
 
-  const handleClose = (dest?: TClose, callback?: () => void): void => {
+  const handleClose = (dest?: Close, callback?: () => void): void => {
     if (onClose) {
       onClose();
     }
@@ -650,8 +742,8 @@ const ModalizeBase = (
   });
 
   const renderHandle = (): JSX.Element | null => {
-    const handleStyles: (TStyle | undefined)[] = [s.handle];
-    const shapeStyles: (TStyle | undefined)[] = [s.handle__shape, handleStyle];
+    const handleStyles: (Style | undefined)[] = [s.handle];
+    const shapeStyles: (Style | undefined)[] = [s.handle__shape, handleStyle];
 
     if (!withHandle) {
       return null;
@@ -843,7 +935,7 @@ const ModalizeBase = (
   };
 
   React.useImperativeHandle(ref, () => ({
-    open(dest?: TOpen): void {
+    open(dest?: Open): void {
       if (onOpen) {
         onOpen();
       }
@@ -851,7 +943,7 @@ const ModalizeBase = (
       handleAnimateOpen(alwaysOpen, dest);
     },
 
-    close(dest?: TClose, callback?: () => void): void {
+    close(dest?: Close, callback?: () => void): void {
       handleClose(dest, callback);
     },
   }));
@@ -998,6 +1090,5 @@ const ModalizeBase = (
   return renderModalize;
 };
 
-export type ModalizeProps = IProps;
-export type Modalize = IHandles;
+export type Modalize = Handles;
 export const Modalize = React.forwardRef(ModalizeBase);
