@@ -21,11 +21,7 @@ export default StyleSheet.create({
   modalize__content: {
     zIndex: 5,
 
-    marginTop: 'auto',
-
     backgroundColor: '#fff',
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
 
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
@@ -37,7 +33,6 @@ export default StyleSheet.create({
 
   handle: {
     position: 'absolute',
-    top: -20,
     right: 0,
     left: 0,
     zIndex: 5,

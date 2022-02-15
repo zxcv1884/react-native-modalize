@@ -118,6 +118,12 @@ export interface IProps<ListItem = any> {
   alwaysOpen?: number;
 
   /**
+   * If true, makes the modal slide from top.
+   * @default false
+   */
+  fromTop?: boolean;
+
+  /**
    * Shrink the modal to your content's height.
    * @default false
    */

@@ -83,6 +83,7 @@ const ModalizeBase = (
       default: 0,
     }),
     alwaysOpen,
+    fromTop = false,
     adjustToContentHeight = false,
 
     // Options
@@ -142,11 +143,13 @@ const ModalizeBase = (
   const isHandleOutside = handlePosition === 'outside';
   const handleHeight = withHandle ? 20 : isHandleOutside ? 35 : 20;
   const fullHeight = screenHeight - modalTopOffset;
-  const computedHeight = fullHeight - handleHeight - (isIphoneX ? 34 : 0);
+  const computedHeight = fullHeight - (fromTop ? 0 : handleHeight) - (isIphoneX ? 34 : 0);
   const endHeight = modalHeight || computedHeight;
   const adjustValue = adjustToContentHeight ? undefined : endHeight;
-  const snaps = snapPoint ? [0, endHeight - snapPoint, endHeight] : [0, endHeight];
-
+  const snapTopOffset = fromTop ? -endHeight : 0;
+  const snaps = snapPoint
+    ? [snapTopOffset, endHeight - snapPoint + snapTopOffset, endHeight + snapTopOffset]
+    : [snapTopOffset, endHeight + snapTopOffset];
   const [modalHeightValue, setModalHeightValue] = React.useState(adjustValue);
   const [lastSnap, setLastSnap] = React.useState(snapPoint ? endHeight - snapPoint : 0);
   const [isVisible, setIsVisible] = React.useState(false);
@@ -167,7 +170,8 @@ const ModalizeBase = (
   const overlay = React.useRef(new Animated.Value(0)).current;
   const beginScrollY = React.useRef(new Animated.Value(0)).current;
   const dragY = React.useRef(new Animated.Value(0)).current;
-  const translateY = React.useRef(new Animated.Value(screenHeight)).current;
+  const translateY = React.useRef(new Animated.Value(fromTop ? -screenHeight : screenHeight))
+    .current;
   const reverseBeginScrollY = React.useRef(Animated.multiply(new Animated.Value(-1), beginScrollY))
     .current;
 
@@ -241,7 +245,9 @@ const ModalizeBase = (
     } else if (alwaysOpenValue) {
       toValue = (modalHeightValue || 0) - alwaysOpenValue;
     } else if (snapPoint) {
-      toValue = (modalHeightValue || 0) - snapPoint;
+      toValue = fromTop
+        ? (modalHeightValue ? -modalHeightValue : 0) + snapPoint
+        : (modalHeightValue || 0) - snapPoint;
     }
 
     if (panGestureAnimatedValue && (alwaysOpenValue || snapPoint)) {
@@ -309,9 +315,11 @@ const ModalizeBase = (
     const { timing, spring } = closeAnimationConfig;
     const lastSnapValue = snapPoint ? snaps[1] : 80;
     const toInitialAlwaysOpen = dest === 'alwaysOpen' && Boolean(alwaysOpen);
-    const toValue =
+    let toValue =
       toInitialAlwaysOpen && alwaysOpen ? (modalHeightValue || 0) - alwaysOpen : screenHeight;
-
+    if (fromTop) {
+      toValue = modalHeightValue ? -modalHeightValue : 0;
+    }
     backButtonListenerRef.current?.remove();
     cancelTranslateY.setValue(1);
     setBeginScrollYValue(0);
@@ -453,10 +461,14 @@ const ModalizeBase = (
     const negativeReverseScroll =
       modalPosition === 'top' &&
       beginScrollYValue >= (snapPoint ? 0 : SCROLL_THRESHOLD) &&
-      translationY < 0;
-    const thresholdProps = translationY > threshold && beginScrollYValue === 0;
+      (fromTop ? translationY > 0 : translationY < 0);
+    const translationMultiplier = fromTop ? -1 : 1;
+    const thresholdProps =
+      translationMultiplier * translationY > threshold && beginScrollYValue === 0;
     const closeThreshold = velocity
-      ? (beginScrollYValue <= 20 && velocityY >= velocity) || thresholdProps
+      ? ((fromTop ? beginScrollYValue >= 20 : beginScrollYValue <= 20) &&
+          velocityY >= translationMultiplier * velocity) ||
+        thresholdProps
       : thresholdProps;
     let enableBouncesValue = true;
 
@@ -498,7 +510,7 @@ const ModalizeBase = (
       isAndroid
         ? false
         : alwaysOpen
-        ? beginScrollYValue > 0 || translationY < 0
+        ? beginScrollYValue > 0 || (fromTop ? translationY > 0 : translationY < 0)
         : enableBouncesValue,
     );
 
@@ -524,7 +536,7 @@ const ModalizeBase = (
                 willCloseModalize = false;
               }
 
-              if (snap === endHeight) {
+              if (snap === (fromTop ? -endHeight : endHeight)) {
                 destSnapPoint = snap;
                 willCloseModalize = true;
                 handleClose();
@@ -650,7 +662,9 @@ const ModalizeBase = (
   });
 
   const renderHandle = (): JSX.Element | null => {
-    const handleStyles: (TStyle | undefined)[] = [s.handle];
+    const handlePosition = fromTop ? { bottom: -20 } : { top: -20 };
+    const handleBottomPosition = fromTop ? { bottom: 0 } : { top: 0 };
+    const handleStyles: (TStyle | undefined)[] = [s.handle, handlePosition];
     const shapeStyles: (TStyle | undefined)[] = [s.handle__shape, handleStyle];
 
     if (!withHandle) {
@@ -658,7 +672,7 @@ const ModalizeBase = (
     }
 
     if (!isHandleOutside) {
-      handleStyles.push(s.handleBottom);
+      handleStyles.push(handleBottomPosition);
       shapeStyles.push(s.handle__shapeBottom, handleStyle);
     }
 
@@ -918,6 +932,12 @@ const ModalizeBase = (
     };
   }, []);
 
+  const marginProp = fromTop ? { marginBottom: 'auto' } : { marginTop: 'auto' };
+  const fromTopOffset = fromTop ? -screenHeight : 0;
+  const fromTopEndHeight = fromTop ? 0 : endHeight;
+  const radiusStyle = fromTop
+    ? { borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }
+    : { borderTopLeftRadius: 12, borderTopRightRadius: 12 };
   const keyboardAvoidingViewProps: Animated.AnimatedProps<KeyboardAvoidingViewProps> = {
     keyboardVerticalOffset: keyboardAvoidingOffset,
     behavior: keyboardAvoidingBehavior,
@@ -925,18 +945,20 @@ const ModalizeBase = (
     style: [
       s.modalize__content,
       modalStyle,
+      radiusStyle,
       {
         height: modalHeightValue,
         maxHeight: endHeight,
         transform: [
           {
             translateY: value.interpolate({
-              inputRange: [-40, 0, endHeight],
-              outputRange: [0, 0, endHeight],
+              inputRange: [-40 + fromTopOffset, fromTopOffset, fromTopEndHeight],
+              outputRange: [fromTopOffset, fromTopOffset, fromTopEndHeight],
               extrapolate: 'clamp',
             }),
           },
         ],
+        ...marginProp,
       },
     ],
   };
